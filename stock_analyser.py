@@ -100,15 +100,15 @@ def display_stock_info(stock_data):
 
 def main():
     """
-    Main function to run the Stock Market Data Analyzer application.
+    Main function to run the Stock Market Data Analyser application.
     """
-    print("Welcome to the Stock Market Data Analyzer!")
+    print("Welcome to the Stock Market Data Analyser!")
     print("Type 'exit' to quit.")
 
     while True:
         symbol = input("\nEnter stock ticker symbol (e.g., AAPL, MSFT): ").strip().upper()
         if symbol == 'EXIT':
-            print("Exiting Stock Market Data Analyzer. Goodbye!")
+            print("Exiting Stock Market Data Analyser. Goodbye!")
             break
 
         if not symbol:
