@@ -1,0 +1,6 @@
+# Virtual environment
+venv/
+.env
+__pycache__/
+# API key in a config file (if you move it there later)
+config.ini
