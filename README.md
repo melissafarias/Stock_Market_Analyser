@@ -94,8 +94,12 @@ Type exit and press Enter to quit the application.
 
 Project Structure
 stock-market-analyser/
-├── stock_analyser.py       # Main script for fetching and displaying stock data
-├── requirements.txt        # Lists Python dependencies (e.g., requests)
-├── config.ini              # (Local) Stores your Alpha Vantage API key (ignored by Git)
-└── .gitignore              # Specifies files/directories to ignore in Git (e.g., venv/, config.ini)
+
+stock_analyser.py       # Main script for fetching and displaying stock data
+
+requirements.txt        # Lists Python dependencies (e.g., requests)
+
+config.ini              # (Local) Stores your Alpha Vantage API key (ignored by Git)
+
+.gitignore              # Specifies files/directories to ignore in Git (e.g., venv/, config.ini)
 
