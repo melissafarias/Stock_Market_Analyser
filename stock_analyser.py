@@ -2,9 +2,9 @@ import requests
 import json
 import configparser
 import pandas as pd
-import matplotlib.pyplot as plt # Keep this import here for now, as get_historical_data might still benefit from pandas/matplotlib type definitions
+import matplotlib.pyplot as plt # Kept for potential internal use, but plotting is deferred to plotter.py
 import time # For rate limiting
-from plotter import plot_historical_prices # Import the plotting function from the new file
+from plotter import plot_historical_prices, plot_indicator # Import the plotting functions from the new file
 
 # --- API Key Configuration ---
 config = configparser.ConfigParser()
@@ -82,7 +82,6 @@ def get_historical_data(symbol, outputsize='compact'):
         return None
 
     params = {
-        # Changed from "TIME_SERIES_DAILY_ADJUSTED" to "TIME_SERIES_DAILY"
         "function": "TIME_SERIES_DAILY",
         "symbol": symbol,
         "outputsize": outputsize,
@@ -95,9 +94,10 @@ def get_historical_data(symbol, outputsize='compact'):
         data = response.json()
 
         # --- DEBUGGING STEP: Print the raw API response ---
-        print("\n--- Raw API Response for Historical Data ---")
-        print(json.dumps(data, indent=2))
-        print("-------------------------------------------\n")
+        # Uncomment the lines below if you need to see the full raw API response for debugging
+        # print("\n--- Raw API Response for Historical Data ---")
+        # print(json.dumps(data, indent=2))
+        # print("-------------------------------------------\n")
         # --- END DEBUGGING STEP ---
 
 
@@ -111,20 +111,15 @@ def get_historical_data(symbol, outputsize='compact'):
                 '2. high': 'high',
                 '3. low': 'low',
                 '4. close': 'close',
-                '5. volume': 'volume', # 'adjusted close' and 'dividend amount' might not be present with TIME_SERIES_DAILY
-                '6. volume': 'volume' # This might need to be '5. volume'
+                '5. volume': 'volume'
             })
-            # Adjust column names and conversions based on TIME_SERIES_DAILY response
-            # TIME_SERIES_DAILY typically has: '1. open', '2. high', '3. low', '4. close', '5. volume'
-            # 'adjusted_close', 'dividend_amount', 'split_coefficient' are not typically included.
-            numeric_cols = ['open', 'high', 'low', 'close', 'volume'] # Updated numeric columns
+            # Convert relevant columns to numeric, handling potential errors
+            numeric_cols = ['open', 'high', 'low', 'close', 'volume']
             for col in numeric_cols:
                 df[col] = pd.to_numeric(df[col], errors='coerce') # Coerce errors to NaN
 
-            # If 'adjusted_close' is needed for plotting, you'll need to use 'close' instead
-            # or handle the absence. For plotting, we'll now use 'close'
-            df['adjusted_close'] = df['close'] # Create 'adjusted_close' column from 'close' for plotting compatibility
-
+            # Create 'adjusted_close' column from 'close' for plotting compatibility
+            df['adjusted_close'] = df['close']
 
             df = df.sort_index() # Sort by date ascending
             return df
@@ -173,14 +168,71 @@ def display_stock_info(stock_data):
     print(f"Change: ${change}")
     print(f"Change Percent: {change_percent}")
 
+def calculate_sma(df: pd.DataFrame, window: int, column='close'):
+    """
+    Calculates Simple Moving Average (SMA) for a given DataFrame and window.
+
+    Args:
+        df (pd.DataFrame): DataFrame with stock data.
+        window (int): The period for the moving average.
+        column (str): The column to calculate SMA on (e.g., 'close').
+
+    Returns:
+        pd.Series or None: A Series containing the SMA values, or None if input is invalid.
+    """
+    if df is None or df.empty or column not in df.columns:
+        print(f"Error: Cannot calculate SMA. DataFrame is empty or missing '{column}' column.")
+        return None
+    if window <= 0:
+        print("Error: SMA window must be a positive integer.")
+        return None
+    
+    # Ensure the column is numeric before calculating SMA
+    df[column] = pd.to_numeric(df[column], errors='coerce')
+    sma_series = df[column].rolling(window=window).mean()
+    return sma_series.dropna() # Drop NaN values that appear at the beginning of the series
+
+def calculate_rsi(df: pd.DataFrame, window: int = 14, column='close'):
+    """
+    Calculates the Relative Strength Index (RSI) for a given DataFrame and window.
+
+    Args:
+        df (pd.DataFrame): DataFrame with stock data.
+        window (int): The period for the RSI calculation (default 14).
+        column (str): The column to calculate RSI on (e.g., 'close').
+
+    Returns:
+        pd.Series or None: A Series containing the RSI values, or None if input is invalid.
+    """
+    if df is None or df.empty or column not in df.columns:
+        print(f"Error: Cannot calculate RSI. DataFrame is empty or missing '{column}' column.")
+        return None
+    if window <= 0:
+        print("Error: RSI window must be a positive integer.")
+        return None
+
+    # Ensure the column is numeric
+    df[column] = pd.to_numeric(df[column], errors='coerce')
+
+    delta = df[column].diff()
+    gain = (delta.where(delta > 0, 0)).rolling(window=window).mean()
+    loss = (-delta.where(delta < 0, 0)).rolling(window=window).mean()
+
+    rs = gain / loss
+    rsi_series = 100 - (100 / (1 + rs))
+    return rsi_series.dropna() # Drop NaN values
 
 def main():
     """
     Main function to run the Stock Market Data Analyser application.
     """
     print("Welcome to the Stock Market Data Analyser!")
-    print("Commands: 'quote <symbol>', 'history <symbol>', 'exit'")
-    print("Example: 'quote AAPL' or 'history GOOGL'")
+    print("Commands:")
+    print("  'quote <symbol>'            - Get real-time stock quote.")
+    print("  'history <symbol>'          - Get and plot historical close prices (last 100 days).")
+    print("  'sma <symbol> <window>'     - Calculate and plot Simple Moving Average (e.g., 'sma AAPL 50').")
+    print("  'rsi <symbol> <window>'     - Calculate and plot Relative Strength Index (e.g., 'rsi AAPL 14').")
+    print("  'exit'                      - Quit the application.")
 
     while True:
         user_input = input("\nEnter command: ").strip().lower()
@@ -204,15 +256,56 @@ def main():
                 continue
             historical_df = get_historical_data(symbol)
             if historical_df is not None:
-                # Display a few rows of historical data
                 print(f"\n--- Historical Data for {symbol} (Last 5 days) ---")
                 print(historical_df.tail())
-                # Call the plotting function from the new plotter module
                 plot_historical_prices(historical_df, symbol)
-            # Add a small delay to respect API rate limits (5 calls/minute for free tier)
-            time.sleep(15) # Wait 15 seconds after a historical data call
+            time.sleep(15) # Alpha Vantage free tier: 5 calls/minute
+        elif command == 'sma':
+            if len(parts) < 3:
+                print("Usage: 'sma <symbol> <window>' (e.g., 'sma AAPL 50').")
+                continue
+            window_str = parts[2]
+            try:
+                window = int(window_str)
+                if window <= 0:
+                    raise ValueError("Window must be a positive integer.")
+            except ValueError:
+                print(f"Error: Invalid window '{window_str}'. Please provide a positive integer for the window.")
+                continue
+
+            historical_df = get_historical_data(symbol, outputsize='full') # Use 'full' for more data for indicators
+            if historical_df is not None:
+                sma_data = calculate_sma(historical_df, window)
+                if sma_data is not None:
+                    # Pass original close prices and SMA to the plotter
+                    plot_indicator(historical_df['close'], sma_data, symbol, f'SMA ({window} days)')
+                else:
+                    print(f"Could not calculate SMA for {symbol}.")
+            time.sleep(15) # Alpha Vantage free tier: 5 calls/minute
+        elif command == 'rsi':
+            if len(parts) < 3:
+                print("Usage: 'rsi <symbol> <window>' (e.g., 'rsi AAPL 14').")
+                continue
+            window_str = parts[2]
+            try:
+                window = int(window_str)
+                if window <= 0:
+                    raise ValueError("Window must be a positive integer.")
+            except ValueError:
+                print(f"Error: Invalid window '{window_str}'. Please provide a positive integer for the window.")
+                continue
+
+            historical_df = get_historical_data(symbol, outputsize='full') # Use 'full' for more data for indicators
+            if historical_df is not None:
+                rsi_data = calculate_rsi(historical_df, window)
+                if rsi_data is not None:
+                    # RSI is typically plotted on a separate subplot
+                    plot_indicator(None, rsi_data, symbol, f'RSI ({window} days)', is_rsi=True)
+                else:
+                    print(f"Could not calculate RSI for {symbol}.")
+            time.sleep(15) # Alpha Vantage free tier: 5 calls/minute
         else:
-            print("Invalid command. Please use 'quote <symbol>', 'history <symbol>', or 'exit'.")
+            print("Invalid command. Please use 'quote <symbol>', 'history <symbol>', 'sma <symbol> <window>', 'rsi <symbol> <window>', or 'exit'.")
 
 if __name__ == "__main__":
     main()

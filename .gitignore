@@ -4,3 +4,64 @@ venv/
 __pycache__/
 # API key in a config file (if you move it there later)
 config.ini
+
+
+# Future Enhancements
+# Here are several ways you can expand the functionality and sophistication of your Stock Market Data Analyser:
+
+# 1. Advanced Historical Data Analysis & Visualization
+# Data Storage: Instead of just displaying, store this historical data. Consider:
+
+# CSV files: Simple for quick storage.
+
+# SQLite database: A lightweight, serverless database (sqlite3 is built into Python) for more structured data storage and querying. This would allow you to avoid refetching data constantly.
+
+# More Chart Types: Explore candlestick charts, volume bars, or other financial visualizations using Matplotlib or mplfinance (a library built on Matplotlib specifically for financial plotting).
+
+# Comparison Charts: Allow users to plot historical prices of multiple stocks on the same chart for comparison.
+
+# 2. Portfolio Management
+# Create a Portfolio: Allow users to add multiple stocks to a "portfolio" along with the number of shares they own and their purchase price.
+
+# Calculate Portfolio Value: Sum up the current value of all stocks in the portfolio.
+
+# Track Profit/Loss: Calculate the overall profit or loss for the portfolio based on current market prices versus purchase prices.
+
+# Persistence: Save the portfolio data (e.g., to a JSON file or a SQLite database) so it persists between sessions.
+
+# 3. More Technical Indicators
+# Moving Average Convergence Divergence (MACD): A trend-following momentum indicator.
+
+# Bollinger Bands: Volatility bands plotted above and below a simple moving average.
+
+# Fibonacci Retracements: Tools used to identify potential reversal levels.
+
+# Libraries: Libraries like ta-lib (Technical Analysis Library) or pandas_ta can simplify these calculations.
+
+# 4. Improve User Experience
+# Graphical User Interface (GUI): This is a significant step up but makes the application much more user-friendly.
+
+# Tkinter (Built-in): Good for simple desktop applications.
+
+# PyQt/PySide (More Advanced): For more professional-looking and feature-rich desktop applications.
+
+# Streamlit (Web App - Highly Recommended for Data Apps): Extremely easy to turn your Python scripts into interactive web applications with minimal code. You could have input fields for symbols, display data in tables, and show interactive charts.
+
+# pip install streamlit
+
+# (To run a Streamlit app, you would execute streamlit run your_app_script.py instead of python your_app_script.py)
+
+# Flask (Web App - More Control): If you want a more traditional web development experience, Flask is a good choice.
+
+# Interactive Command-Line Interface:
+
+# Use libraries like Typer or Click for more robust command-line argument parsing and subcommands (e.g., analyser --symbol AAPL --history).
+
+# Add colorized output using colorama or rich for better readability.
+
+# 5. Robustness and Deployment
+# Advanced Error Handling: Implement more specific error messages for different API responses.
+
+# Rate Limiting: Alpha Vantage has API call limits. Implement a delay mechanism in your code to avoid hitting these limits (e.g., time.sleep() between calls).
+
+# Testing: Write unit tests for your functions using unittest or pytest to ensure correctness and prevent regressions.
